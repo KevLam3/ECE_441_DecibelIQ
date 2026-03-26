@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "366312896811",
+    "firebase_url": "https://decibel-iq-default-rtdb.firebaseio.com",
+    "project_id": "decibel-iq",
+    "storage_bucket": "decibel-iq.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:366312896811:android:50ee492569d8b541896d6e",
+        "android_client_info": {
+          "package_name": "com.example.ece441project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADZusT0o4lzMWS3d6ndqfty0nnxz11g-A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
