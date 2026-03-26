@@ -26,10 +26,11 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version = "33.1.2" }
+firebase-database = { module = "com.google.firebase:firebase-database-ktx", version = "20.3.0" }
+firebase-common = { module = "com.google.firebase:firebase-common-ktx", version = "20.4.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
-
+google-gms-google-services = { id = "com.google.gms.google-services", version = "4.4.1" }
