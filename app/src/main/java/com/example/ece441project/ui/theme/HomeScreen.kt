@@ -16,10 +16,19 @@ import androidx.compose.ui.unit.sp
 // -----------------------------
 // Android + Bluetooth
 // -----------------------------
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+// -----------------------------
+// App Code
+// -----------------------------
 import com.example.ece441project.BleViewModel
 import com.example.ece441project.Sample
 
@@ -28,6 +37,21 @@ import com.example.ece441project.Sample
 // -----------------------------
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.database.ktx.database
+
+// ---------------------------------------------------------
+// Permission Helper
+// ---------------------------------------------------------
+private fun hasBlePermissions(context: android.content.Context): Boolean {
+    val required = listOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    return required.all { perm ->
+        ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
+    }
+}
 
 // ---------------------------------------------------------
 // Waveform Graph
@@ -64,7 +88,7 @@ fun WaveformGraph(
 }
 
 // ---------------------------------------------------------
-// HomeScreen UI + Permission Handling
+// HomeScreen UI + Permission-Safe BLE Startup
 // ---------------------------------------------------------
 @Composable
 fun HomeScreen() {
@@ -74,10 +98,38 @@ fun HomeScreen() {
     val vm: BleViewModel = viewModel()
     val maxPoints = 300
 
-    LaunchedEffect(Unit) {
-        vm.startScan(context, firebaseRef, maxPoints)
+    // -----------------------------
+    // Permission Launcher
+    // -----------------------------
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grantedMap ->
+        val allGranted = grantedMap.values.all { it }
+        if (allGranted) {
+            vm.startScan(context, firebaseRef, maxPoints)
+        }
     }
 
+    // -----------------------------
+    // Request permissions on first load
+    // -----------------------------
+    LaunchedEffect(Unit) {
+        if (!hasBlePermissions(context)) {
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            )
+        } else {
+            vm.startScan(context, firebaseRef, maxPoints)
+        }
+    }
+
+    // -----------------------------
+    // UI
+    // -----------------------------
     Column(
         modifier = Modifier
             .fillMaxSize()
