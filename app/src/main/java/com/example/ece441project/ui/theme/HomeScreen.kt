@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 // ---------------------------------------------------------
-// Graphics (Canvas for LAeq graph)
+// Graphics (Canvas for Dose graph)
 // ---------------------------------------------------------
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Color
@@ -32,10 +32,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 // ---------------------------------------------------------
-// LAeq Graph Composable
+// Dose Graph Composable
 // ---------------------------------------------------------
 @Composable
-fun LAeqGraph(
+fun DoseGraph(
     data: List<Float>,
     modifier: Modifier = Modifier
 ) {
@@ -57,7 +57,7 @@ fun LAeqGraph(
             val y2 = size.height - ((data[i + 1] - minVal) / range) * size.height
 
             drawLine(
-                color = Color(0xFF00AEEF),
+                color = Color(0xFFFF5722), // Orange for dose
                 start = Offset(x1, y1),
                 end = Offset(x2, y2),
                 strokeWidth = 4f
@@ -102,15 +102,15 @@ fun HomeScreen() {
     }
 
     // -----------------------------
-    // LAeq History Buffer
+    // Dose History Buffer
     // -----------------------------
-    val laeqHistory = remember { mutableStateListOf<Float>() }
+    val doseHistory = remember { mutableStateListOf<Float>() }
 
-    LaunchedEffect(vm.laeq.value) {
-        val v = vm.laeq.value.toFloatOrNull()
+    LaunchedEffect(vm.dose.value) {
+        val v = vm.dose.value.toFloatOrNull()
         if (v != null && v.isFinite()) {
-            laeqHistory.add(v)
-            if (laeqHistory.size > maxPoints) laeqHistory.removeAt(0)
+            doseHistory.add(v)
+            if (doseHistory.size > maxPoints) doseHistory.removeAt(0)
         }
     }
 
@@ -124,13 +124,13 @@ fun HomeScreen() {
     ) {
 
         // -----------------------------
-        // LAeq Graph
+        // Dose Graph
         // -----------------------------
-        Text("LAeq Trend", fontSize = 26.sp)
+        Text("Dose Trend", fontSize = 26.sp)
         Spacer(modifier = Modifier.height(10.dp))
 
-        LAeqGraph(
-            data = laeqHistory,
+        DoseGraph(
+            data = doseHistory,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
