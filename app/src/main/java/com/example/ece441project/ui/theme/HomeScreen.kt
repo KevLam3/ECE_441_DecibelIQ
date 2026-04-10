@@ -1,10 +1,9 @@
-@file:Suppress("DEPRECATION")
-
 package com.example.ece441project.ui.theme
 
-// -----------------------------
+// ---------------------------------------------------------
 // Jetpack Compose
-// -----------------------------
+// ---------------------------------------------------------
+import android.Manifest
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
@@ -12,61 +11,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
-// -----------------------------
-// Android + Bluetooth
-// -----------------------------
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+// ---------------------------------------------------------
+// Graphics (Canvas for LAeq graph)
+// ---------------------------------------------------------
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
-import androidx.lifecycle.viewmodel.compose.viewModel
 
-// -----------------------------
-// App Code
-// -----------------------------
+// ---------------------------------------------------------
+// BLE ViewModel
+// ---------------------------------------------------------
 import com.example.ece441project.BleViewModel
-import com.example.ece441project.Sample
-
-// -----------------------------
-// Firebase
-// -----------------------------
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.database.ktx.database
 
 // ---------------------------------------------------------
-// Permission Helper
+// Android Runtime Permissions
 // ---------------------------------------------------------
-private fun hasBlePermissions(context: android.content.Context): Boolean {
-    val required = listOf(
-        Manifest.permission.BLUETOOTH_SCAN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    )
-
-    return required.all { perm ->
-        ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
-    }
-}
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 // ---------------------------------------------------------
-// Waveform Graph
+// LAeq Graph Composable
 // ---------------------------------------------------------
 @Composable
-fun WaveformGraph(
-    data: List<Sample>,
+fun LAeqGraph(
+    data: List<Float>,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier) {
+
         if (data.size < 2) return@Canvas
 
-        val minVal = data.minOf { it.value }.toFloat()
-        val maxVal = data.maxOf { it.value }.toFloat()
-        val valRange = (maxVal - minVal).takeIf { it > 0f } ?: 1f
+        val minVal = data.minOrNull() ?: 0f
+        val maxVal = data.maxOrNull() ?: minVal + 1f
+        val range = (maxVal - minVal).takeIf { it > 0f } ?: 1f
 
         val xStep = size.width / (data.size - 1)
 
@@ -74,77 +53,103 @@ fun WaveformGraph(
             val x1 = i * xStep
             val x2 = (i + 1) * xStep
 
-            val y1 = size.height - ((data[i].value - minVal) / valRange) * size.height
-            val y2 = size.height - ((data[i + 1].value - minVal) / valRange) * size.height
+            val y1 = size.height - ((data[i] - minVal) / range) * size.height
+            val y2 = size.height - ((data[i + 1] - minVal) / range) * size.height
 
             drawLine(
-                color = Color.Red,
+                color = Color(0xFF00AEEF),
                 start = Offset(x1, y1),
                 end = Offset(x2, y2),
-                strokeWidth = 3f
+                strokeWidth = 4f
             )
         }
     }
 }
 
 // ---------------------------------------------------------
-// HomeScreen UI + Permission-Safe BLE Startup
+// HomeScreen UI
 // ---------------------------------------------------------
 @Composable
 fun HomeScreen() {
-    val context = LocalContext.current
-    val firebaseRef = Firebase.database.getReference("mic/raw")
 
+    // -----------------------------
+    // Context + ViewModel
+    // -----------------------------
+    val context = LocalContext.current
     val vm: BleViewModel = viewModel()
     val maxPoints = 300
 
     // -----------------------------
-    // Permission Launcher
+    // Runtime Permissions
     // -----------------------------
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val permissions = arrayOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    var permissionsGranted by remember { mutableStateOf(false) }
+
+    val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { grantedMap ->
-        val allGranted = grantedMap.values.all { it }
-        if (allGranted) {
-            vm.startScan(context, firebaseRef, maxPoints)
-        }
+    ) { results ->
+        permissionsGranted = results.values.all { it }
+        if (permissionsGranted) vm.startScan(context)
     }
 
-    // -----------------------------
-    // Request permissions on first load
-    // -----------------------------
     LaunchedEffect(Unit) {
-        if (!hasBlePermissions(context)) {
-            permissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.BLUETOOTH_SCAN,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            )
-        } else {
-            vm.startScan(context, firebaseRef, maxPoints)
+        launcher.launch(permissions)
+    }
+
+    // -----------------------------
+    // LAeq History Buffer
+    // -----------------------------
+    val laeqHistory = remember { mutableStateListOf<Float>() }
+
+    LaunchedEffect(vm.laeq.value) {
+        val v = vm.laeq.value.toFloatOrNull()
+        if (v != null && v.isFinite()) {
+            laeqHistory.add(v)
+            if (laeqHistory.size > maxPoints) laeqHistory.removeAt(0)
         }
     }
 
     // -----------------------------
-    // UI
+    // UI Layout
     // -----------------------------
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
     ) {
-        Text("Mic Raw Value:", fontSize = 22.sp)
-        Text(vm.rawValue.value, fontSize = 60.sp)
 
-        Spacer(modifier = Modifier.height(20.dp))
+        // -----------------------------
+        // LAeq Graph
+        // -----------------------------
+        Text("LAeq Trend", fontSize = 26.sp)
+        Spacer(modifier = Modifier.height(10.dp))
 
-        WaveformGraph(
-            data = vm.waveform,
+        LAeqGraph(
+            data = laeqHistory,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
         )
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // -----------------------------
+        // Telemetry Values
+        // -----------------------------
+        Text("Sound Exposure Summary", fontSize = 26.sp)
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text("SPL: ${vm.spl.value} dBA", fontSize = 20.sp)
+        Text("LAeq: ${vm.laeq.value} dBA", fontSize = 20.sp)
+        Text("Dose: ${vm.dose.value} %", fontSize = 20.sp)
+        Text("LED: ${vm.led.value}", fontSize = 20.sp)
+        Text("Blink: ${vm.blink.value}", fontSize = 20.sp)
+        Text("Time Left (24h): ${vm.time24.value} h", fontSize = 20.sp)
+        Text("Safe Time Left: ${vm.safe.value} h", fontSize = 20.sp)
     }
 }
