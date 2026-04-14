@@ -1,16 +1,18 @@
 package com.example.ece441project.ui.theme.home
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.ece441project.BleViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun SettingsScreen(
+    navController: NavController,
+    bleViewModel: BleViewModel,
     auth: FirebaseAuth = FirebaseAuth.getInstance()
 ) {
     Column(
@@ -22,33 +24,34 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            ListItem(
-                headlineContent = { Text("Account") },
-                supportingContent = { Text(auth.currentUser?.email ?: "Not signed in") },
-                leadingContent = { Icon(Icons.Default.Person, null) },
-                trailingContent = {
-                    TextButton(onClick = { auth.signOut() }) {
-                        Text("Sign out")
-                    }
+        SectionItem("Customization") { navController.navigate("customization") }
+        SectionItem("Account management") { navController.navigate("account_management") }
+        SectionItem("Color indication") { navController.navigate("color_indication") }
+        SectionItem("Restart device") { navController.navigate("restart_device") }
+
+        Spacer(Modifier.weight(1f))
+
+        Button(
+            onClick = {
+                auth.signOut()
+                navController.navigate("auth") {
+                    popUpTo("home") { inclusive = true }
                 }
-            )
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Sign out")
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
+        Button(
+            onClick = {
+                bleViewModel.startScan()
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            ListItem(
-                headlineContent = { Text("LED Colors") },
-                supportingContent = { Text("Explains what each LED color means") },
-                leadingContent = { Icon(Icons.Default.Palette, null) }
-            )
+            Text("Connect to ESP32")
         }
     }
 }

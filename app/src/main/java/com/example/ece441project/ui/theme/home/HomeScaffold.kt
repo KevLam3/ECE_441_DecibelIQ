@@ -1,74 +1,124 @@
 package com.example.ece441project.ui.theme.home
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ece441project.BleViewModel
+import com.example.ece441project.ui.theme.home.subsection.*
 
 @Composable
-fun HomeScaffold() {
-
-    val bleViewModel: BleViewModel = viewModel()
-
-    val spl = bleViewModel.spl.collectAsState()
-    val laeq = bleViewModel.laeq.collectAsState()
-    val dose = bleViewModel.dose.collectAsState()
-    val led = bleViewModel.led.collectAsState()
-    val blink = bleViewModel.blink.collectAsState()
-    val time24 = bleViewModel.time24.collectAsState()
-    val safe = bleViewModel.safe.collectAsState()
-
+fun HomeScaffold(
+    bleViewModel: BleViewModel,
+    navController: NavController
+) {
     val homeNavController = rememberNavController()
 
-    val items = listOf("daily_log", "for_you", "settings")
+    // Collect BLE values
+    val spl = bleViewModel.spl.collectAsState().value
+    val laeq = bleViewModel.laeq.collectAsState().value
+    val dose = bleViewModel.dose.collectAsState().value
+    val led = bleViewModel.led.collectAsState().value
+    val blink = bleViewModel.blink.collectAsState().value
+    val time24 = bleViewModel.time24.collectAsState().value
+    val safe = bleViewModel.safe.collectAsState().value
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                items.forEach { route ->
-                    NavigationBarItem(
-                        selected = homeNavController.currentDestination?.route == route,
-                        onClick = {
-                            homeNavController.navigate(route) {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                        label = { Text(route.replace("_", " ").uppercase()) }
-                    )
-                }
+                NavigationBarItem(
+                    selected = homeNavController.currentDestination?.route == "daily_log",
+                    onClick = {
+                        homeNavController.navigate("daily_log") {
+                            popUpTo(homeNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Home, null) },
+                    label = { Text("Daily Log") }
+                )
+
+                NavigationBarItem(
+                    selected = homeNavController.currentDestination?.route == "for_you",
+                    onClick = {
+                        homeNavController.navigate("for_you") {
+                            popUpTo(homeNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Favorite, null) },
+                    label = { Text("For You") }
+                )
+
+                NavigationBarItem(
+                    selected = homeNavController.currentDestination?.route == "settings",
+                    onClick = {
+                        homeNavController.navigate("settings") {
+                            popUpTo(homeNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Settings, null) },
+                    label = { Text("Settings") }
+                )
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            NavHost(
-                navController = homeNavController,
-                startDestination = "daily_log"
-            ) {
-                composable("daily_log") {
-                    DailyLogScreen(
-                        spl = spl.value,
-                        laeq = laeq.value,
-                        dose = dose.value,
-                        led = led.value,
-                        blink = blink.value,
-                        time24 = time24.value,
-                        safe = safe.value
-                    )
-                }
-                composable("for_you") { ForYouScreen() }
-                composable("settings") { SettingsScreen() }
+        NavHost(
+            navController = homeNavController,
+            startDestination = "daily_log",
+            modifier = Modifier.padding(innerPadding)
+        ) {
+
+            // DAILY LOG — correct parameter order
+            composable("daily_log") {
+                DailyLogScreen(
+                    navController = homeNavController,
+                    spl = spl,
+                    laeq = laeq,
+                    dose = dose,
+                    led = led,
+                    blink = blink,
+                    time24 = time24,
+                    safe = safe
+                )
             }
+
+            // FOR YOU — correct parameter order
+            composable("for_you") {
+                ForYouScreen(
+                    navController = homeNavController,
+                    safe = safe,
+                    spl = spl,
+                    laeq = laeq,
+                    led = led,
+                    blink = blink
+                )
+            }
+
+            // SETTINGS
+            composable("settings") {
+                SettingsScreen(
+                    navController = homeNavController,
+                    bleViewModel = bleViewModel
+                )
+            }
+
+            // SETTINGS SUBSECTIONS
+            composable("customization") { CustomizationScreen() }
+            composable("account_management") { AccountManagementScreen() }
+            composable("color_indication") { ColorIndicationScreen() }
+            composable("restart_device") { RestartDeviceScreen() }
         }
     }
 }

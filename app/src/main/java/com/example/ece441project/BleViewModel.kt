@@ -3,7 +3,9 @@ package com.example.ece441project
 import android.Manifest
 import android.app.Application
 import android.bluetooth.*
+import android.bluetooth.le.*
 import android.content.pm.PackageManager
+import android.os.ParcelUuid
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
@@ -16,7 +18,9 @@ import java.util.UUID
 class BleViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
+
     private var bluetoothGatt: BluetoothGatt? = null
+    private var scanner: BluetoothLeScanner? = null
 
     // ESP32 UUIDs
     private val SERVICE_UUID =
@@ -48,25 +52,60 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     private val _safe = MutableStateFlow(0f)
     val safe: StateFlow<Float> = _safe
 
-    // -----------------------------
-    // BLE Connection
-    // -----------------------------
-    fun connect(device: BluetoothDevice) {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected
 
+    // ---------------------------------------------------------
+    // SCANNING
+    // ---------------------------------------------------------
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    fun startScan() {
+        scanner = BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner
+
+        val filter = ScanFilter.Builder()
+            .setServiceUuid(ParcelUuid(SERVICE_UUID))
+            .build()
+
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+
+        scanner?.startScan(listOf(filter), settings, scanCallback)
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    fun stopScan() {
+        scanner?.stopScan(scanCallback)
+    }
+
+    private val scanCallback = object : ScanCallback() {
+        @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN])
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            stopScan()
+            connect(result.device)
+        }
+    }
+
+    // ---------------------------------------------------------
+    // CONNECT
+    // ---------------------------------------------------------
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun connect(device: BluetoothDevice) {
         bluetoothGatt = device.connectGatt(context, false, gattCallback)
     }
 
+    // ---------------------------------------------------------
+    // GATT CALLBACK
+    // ---------------------------------------------------------
     private val gattCallback = object : BluetoothGattCallback() {
 
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
+                _isConnected.value = true
                 gatt.discoverServices()
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                _isConnected.value = false
             }
         }
 
@@ -85,21 +124,36 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
             gatt.writeDescriptor(descriptor)
         }
 
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt,
+            descriptor: BluetoothGattDescriptor,
+            status: Int
+        ) {
+            // Retry if needed
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                gatt.writeDescriptor(descriptor)
+            }
+        }
+
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic
         ) {
-            val packet = characteristic.getStringValue(0)
+            if (characteristic.uuid != DATA_UUID) return
+
+            val packet = characteristic.value?.toString(Charsets.UTF_8) ?: return
             parsePacket(packet)
         }
     }
 
-    // -----------------------------
-    // Parse ESP32 telemetry packet
-    // -----------------------------
+    // ---------------------------------------------------------
+    // PARSE TELEMETRY
+    // ---------------------------------------------------------
     private fun parsePacket(packet: String) {
         val map = packet.split(",").associate {
-            val (k, v) = it.split("=")
+            val (k, v) = it.split("=").map { it.trim() }
             k to v
         }
 
