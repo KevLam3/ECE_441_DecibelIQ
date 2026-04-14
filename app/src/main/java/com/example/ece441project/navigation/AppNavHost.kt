@@ -2,23 +2,22 @@ package com.example.ece441project.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-
 import com.example.ece441project.ui.theme.auth.AuthScreen
+import com.example.ece441project.ui.theme.auth.AuthViewModel
 import com.example.ece441project.ui.theme.auth.RegisterScreen
-
 import com.example.ece441project.ui.theme.home.HomeScaffold
-import com.example.ece441project.ui.theme.home.DailyLogScreen
-import com.example.ece441project.ui.theme.home.ForYouScreen
-import com.example.ece441project.ui.theme.home.SettingsScreen
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val authViewModel: AuthViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = "auth",
@@ -26,6 +25,7 @@ fun AppNavHost(
     ) {
         composable("auth") {
             AuthScreen(
+                viewModel = authViewModel,
                 onSignInSuccess = { navController.navigate("home") },
                 onNavigateToRegister = { navController.navigate("register") }
             )
@@ -33,17 +33,14 @@ fun AppNavHost(
 
         composable("register") {
             RegisterScreen(
+                viewModel = authViewModel,
                 onRegisterSuccess = { navController.navigate("home") },
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable("home") {
-            HomeScaffold(navController)
+            HomeScaffold()
         }
-
-        composable("daily_log") { DailyLogScreen() }
-        composable("for_you") { ForYouScreen() }
-        composable("settings") { SettingsScreen() }
     }
 }

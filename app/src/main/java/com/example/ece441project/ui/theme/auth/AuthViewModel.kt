@@ -1,5 +1,6 @@
 package com.example.ece441project.ui.theme.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,18 +31,42 @@ class AuthViewModel : ViewModel() {
         val email = state.value.email
         val password = state.value.password
 
+        if (email.isBlank() || password.isBlank()) {
+            _state.update { it.copy(error = "Email and password cannot be empty") }
+            return
+        }
+
         FirebaseAuth.getInstance()
             .signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { onSuccess() }
+            .addOnSuccessListener {
+                Log.d("AUTH", "Sign-in success")
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                Log.e("AUTH", "Sign-in failed: ${e.message}", e)
+                _state.update { it.copy(error = e.message) }
+            }
     }
 
     fun register(onSuccess: () -> Unit) {
         val email = state.value.email
         val password = state.value.password
 
+        if (email.isBlank() || password.isBlank()) {
+            _state.update { it.copy(error = "Email and password cannot be empty") }
+            return
+        }
+
         FirebaseAuth.getInstance()
             .createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { onSuccess() }
+            .addOnSuccessListener {
+                Log.d("AUTH", "Register success")
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                Log.e("AUTH", "Register failed: ${e.message}", e)
+                _state.update { it.copy(error = e.message) }
+            }
     }
-}
 
+}
