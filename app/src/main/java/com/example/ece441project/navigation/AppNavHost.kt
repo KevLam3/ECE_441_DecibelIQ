@@ -57,8 +57,7 @@ fun AppNavHost(
         // -------------------------
         composable("home") {
             HomeScaffold(
-                bleViewModel = bleViewModel,
-                navController = navController
+                bleViewModel = bleViewModel
             )
         }
 

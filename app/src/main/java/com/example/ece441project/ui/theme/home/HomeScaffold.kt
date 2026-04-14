@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,8 +18,7 @@ import com.example.ece441project.ui.theme.home.subsection.*
 
 @Composable
 fun HomeScaffold(
-    bleViewModel: BleViewModel,
-    navController: NavController
+    bleViewModel: BleViewModel
 ) {
     val homeNavController = rememberNavController()
 
@@ -80,7 +78,7 @@ fun HomeScaffold(
             modifier = Modifier.padding(innerPadding)
         ) {
 
-            // DAILY LOG — correct parameter order
+            // DAILY LOG
             composable("daily_log") {
                 DailyLogScreen(
                     navController = homeNavController,
@@ -94,7 +92,7 @@ fun HomeScaffold(
                 )
             }
 
-            // FOR YOU — correct parameter order
+            // FOR YOU
             composable("for_you") {
                 ForYouScreen(
                     navController = homeNavController,
@@ -118,7 +116,18 @@ fun HomeScaffold(
             composable("customization") { CustomizationScreen() }
             composable("account_management") { AccountManagementScreen() }
             composable("color_indication") { ColorIndicationScreen() }
-            composable("restart_device") { RestartDeviceScreen() }
+            composable("restart_device") { RestartDeviceScreen(bleViewModel = bleViewModel) }
+
+            // DAILY LOG SUBROUTES
+            composable("shift_started") { ScreenTemplate("Shift Started") }
+            composable("shift_ended") { ScreenTemplate("Shift Ended") }
+            composable("current_levels") { ScreenTemplate("Current Sound Levels") }
+
+            // FOR YOU SUBROUTES
+            composable("safe_hours") { ScreenTemplate("Safe Hours Left") }
+            composable("current_sound") { ScreenTemplate("Current Sound") }
+            composable("battery_life") { ScreenTemplate("Battery Life") }
+            composable("power_device") { ScreenTemplate("Power Device") }
         }
     }
 }
