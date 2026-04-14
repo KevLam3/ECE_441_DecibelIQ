@@ -10,6 +10,7 @@ kotlin = "2.0.21"
 composeBom = "2024.09.00"
 googleGmsGoogleServices = "4.4.4"
 firebaseDatabase = "22.0.1"
+paletteKtx = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,6 +30,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 firebase-bom = { module = "com.google.firebase:firebase-bom", version = "33.1.2" }
 firebase-database = { module = "com.google.firebase:firebase-database-ktx", version = "20.3.0" }
 firebase-common = { module = "com.google.firebase:firebase-common-ktx", version = "20.4.0" }
+androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
