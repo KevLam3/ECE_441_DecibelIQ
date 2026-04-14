@@ -13,12 +13,14 @@ import com.example.ece441project.BleViewModel
 
 @Composable
 fun DailyLogScreen(
-    viewModel: BleViewModel = viewModel()
+    spl: Float,
+    laeq: Float,
+    dose: Float,
+    led: String,
+    blink: Boolean,
+    time24: Float,
+    safe: Float
 ) {
-    val spl = viewModel.spl.value
-    val laeq = viewModel.laeq.value
-    val dose = viewModel.dose.value
-
     Column(
         modifier = Modifier
             .fillMaxSize()
