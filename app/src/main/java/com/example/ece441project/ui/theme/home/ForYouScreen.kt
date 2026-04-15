@@ -30,21 +30,9 @@ fun ForYouScreen(
         Spacer(Modifier.height(16.dp))
 
         SectionItem("Safe hours left") { navController.navigate("safe_hours") }
-        SectionItem("Current sound levels") { navController.navigate("current_sound") }
         SectionItem("Battery life") { navController.navigate("battery_life") }
         SectionItem("Power on/off device") { navController.navigate("power_device") }
 
         Spacer(Modifier.height(24.dp))
-
-        Text("Live Data", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(12.dp))
-
-        DataCard("Safe Hours Left", "$safe h", Icons.Default.AccessTime)
-        Spacer(Modifier.height(12.dp))
-        DataCard("Current SPL", "$spl dB", Icons.Default.GraphicEq)
-        Spacer(Modifier.height(12.dp))
-        DataCard("LAeq", "$laeq dB", Icons.Default.Info)
-        Spacer(Modifier.height(12.dp))
-        DataCard("LED Status", "Color: $led, Blink: $blink", Icons.Default.Lightbulb)
     }
 }

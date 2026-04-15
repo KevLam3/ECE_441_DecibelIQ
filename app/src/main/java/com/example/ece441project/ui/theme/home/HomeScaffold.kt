@@ -92,6 +92,19 @@ fun HomeScaffold(
                 )
             }
 
+            // DAILY LOG CURRENT SOUND LEVEL
+            composable("current_levels") {
+                CurrentLevelsScreen(
+                    spl = spl,
+                    laeq = laeq,
+                    dose = dose,
+                    led = led,
+                    blink = blink,
+                    time24 = time24,
+                    safe = safe
+                )
+            }
+
             // FOR YOU
             composable("for_you") {
                 ForYouScreen(
@@ -121,11 +134,9 @@ fun HomeScaffold(
             // DAILY LOG SUBROUTES
             composable("shift_started") { ScreenTemplate("Shift Started") }
             composable("shift_ended") { ScreenTemplate("Shift Ended") }
-            composable("current_levels") { ScreenTemplate("Current Sound Levels") }
 
             // FOR YOU SUBROUTES
             composable("safe_hours") { ScreenTemplate("Safe Hours Left") }
-            composable("current_sound") { ScreenTemplate("Current Sound") }
             composable("battery_life") { ScreenTemplate("Battery Life") }
             composable("power_device") { ScreenTemplate("Power Device") }
         }

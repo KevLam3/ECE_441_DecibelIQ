@@ -38,15 +38,6 @@ fun DailyLogScreen(
         SectionItem("Current sound levels") { navController.navigate("current_levels") }
 
         Spacer(Modifier.height(24.dp))
-
-        Text("Live Data", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(12.dp))
-
-        DataCard("Current SPL", "$spl dB", Icons.Default.GraphicEq)
-        Spacer(Modifier.height(12.dp))
-        DataCard("LAeq", "$laeq dB", Icons.Default.Info)
-        Spacer(Modifier.height(12.dp))
-        DataCard("Dose", "$dose %", Icons.Default.Info)
     }
 }
 
