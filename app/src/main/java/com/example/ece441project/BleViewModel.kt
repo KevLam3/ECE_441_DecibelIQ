@@ -1,6 +1,7 @@
 package com.example.ece441project
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.bluetooth.*
 import android.bluetooth.le.BluetoothLeScanner
@@ -17,6 +18,7 @@ import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
+import com.google.firebase.database.FirebaseDatabase
 
 class BleViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -32,6 +34,8 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val context: Context = application.applicationContext
+    private val firebaseRef = FirebaseDatabase.getInstance()
+        .getReference("mic")
 
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -240,6 +244,22 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         }, RECONNECT_DELAY_MS)
     }
 
+    // ---------- Upload to Firebase ---------
+    @SuppressLint("DefaultLocale")
+    private fun uploadToFirebase() {
+        val data = mapOf(
+            "spl" to String.format("%.2f", spl.value),
+            "laeq" to String.format("%.2f", laeq.value),
+            "dose" to String.format("%.2f", dose.value),
+            "led" to led.value,
+            "blink" to blink.value,
+            "time24" to String.format("%.2f", time24.value),
+            "safe" to String.format("%.2f", safe.value)
+        )
+
+        firebaseRef.setValue(data)
+    }
+
     // ---------- PARSING ESP32 PACKET ----------
 
     private fun parsePacket(packet: String) {
@@ -263,6 +283,8 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         map["blink"]?.toIntOrNull()?.let { _blink.value = it != 0 }
         map["time24"]?.toFloatOrNull()?.let { _time24.value = it }
         map["safe"]?.toFloatOrNull()?.let { _safe.value = it }
+
+        uploadToFirebase()
     }
 
     // ---------- CLEANUP ----------
