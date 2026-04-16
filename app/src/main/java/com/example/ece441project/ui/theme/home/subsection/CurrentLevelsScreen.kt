@@ -29,7 +29,7 @@ fun CurrentLevelsScreen(
     val minDb = 40f
     val maxDb = 120f
 
-    // Normalize SPL into 0f..1f range
+    // Normalize SPL into 0f .1f range
     val progress = ((spl - minDb) / (maxDb - minDb))
         .coerceIn(0f, 1f)
 
@@ -73,7 +73,7 @@ fun CurrentLevelsScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "${spl.toInt()} dB",
+                text = "$spl dB",
                 style = MaterialTheme.typography.displayLarge,
                 color = barColor
             )
