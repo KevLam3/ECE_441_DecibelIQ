@@ -1,5 +1,7 @@
 package com.example.ece441project.navigation
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -24,30 +26,34 @@ fun AppNavHost(
 
         // AUTH SCREEN
         composable("auth") {
-            AuthScreen(
-                onSignInSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("auth") { inclusive = true }
+            Surface(color = MaterialTheme.colorScheme.background) {
+                AuthScreen(
+                    onSignInSuccess = {
+                        navController.navigate("home") {
+                            popUpTo("auth") { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate("register")
                     }
-                },
-                onNavigateToRegister = {
-                    navController.navigate("register")
-                }
-            )
+                )
+            }
         }
 
         // REGISTER SCREEN
         composable("register") {
-            RegisterScreen(
-                onRegisterSuccess = {
-                    navController.navigate("home") {
-                        popUpTo("auth") { inclusive = true }
+            Surface(color = MaterialTheme.colorScheme.background) {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navController.navigate("home") {
+                            popUpTo("auth") { inclusive = true }
+                        }
+                    },
+                    onBack = {
+                        navController.popBackStack()
                     }
-                },
-                onBack = {
-                    navController.popBackStack()
-                }
-            )
+                )
+            }
         }
 
         // HOME (3‑TAB SCAFFOLD)
