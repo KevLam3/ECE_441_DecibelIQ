@@ -14,11 +14,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ece441project.BleViewModel
+import com.example.ece441project.viewmodel.ThemeViewModel
 import com.example.ece441project.ui.theme.home.subsection.*
 
 @Composable
 fun HomeScaffold(
-    bleViewModel: BleViewModel
+    bleViewModel: BleViewModel,
+    themeViewModel: ThemeViewModel
 ) {
     val homeNavController = rememberNavController()
 
@@ -72,6 +74,7 @@ fun HomeScaffold(
             }
         }
     ) { innerPadding ->
+
         NavHost(
             navController = homeNavController,
             startDestination = "daily_log",
@@ -92,7 +95,7 @@ fun HomeScaffold(
                 )
             }
 
-            // DAILY LOG CURRENT SOUND LEVEL
+            // CURRENT LEVELS
             composable("current_levels") {
                 CurrentLevelsScreen(
                     spl = spl,
@@ -126,7 +129,9 @@ fun HomeScaffold(
             }
 
             // SETTINGS SUBSECTIONS
-            composable("customization") { CustomizationScreen() }
+            composable("customization") {
+                CustomizationScreen(themeViewModel = themeViewModel)
+            }
             composable("account_management") { AccountManagementScreen() }
             composable("color_indication") { ColorIndicationScreen() }
             composable("restart_device") { RestartDeviceScreen(bleViewModel = bleViewModel) }

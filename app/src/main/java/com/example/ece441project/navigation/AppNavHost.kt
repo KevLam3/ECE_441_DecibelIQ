@@ -9,20 +9,20 @@ import com.example.ece441project.ui.theme.auth.AuthScreen
 import com.example.ece441project.ui.theme.auth.RegisterScreen
 import com.example.ece441project.ui.theme.home.HomeScaffold
 import com.example.ece441project.ui.theme.home.SettingsScreen
+import com.example.ece441project.viewmodel.ThemeViewModel
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    bleViewModel: BleViewModel
+    bleViewModel: BleViewModel,
+    themeViewModel: ThemeViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = "auth"
     ) {
 
-        // -------------------------
         // AUTH SCREEN
-        // -------------------------
         composable("auth") {
             AuthScreen(
                 onSignInSuccess = {
@@ -36,9 +36,7 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------
         // REGISTER SCREEN
-        // -------------------------
         composable("register") {
             RegisterScreen(
                 onRegisterSuccess = {
@@ -52,18 +50,15 @@ fun AppNavHost(
             )
         }
 
-        // -------------------------
         // HOME (3‑TAB SCAFFOLD)
-        // -------------------------
         composable("home") {
             HomeScaffold(
-                bleViewModel = bleViewModel
+                bleViewModel = bleViewModel,
+                themeViewModel = themeViewModel
             )
         }
 
-        // -------------------------
         // SETTINGS SCREEN
-        // -------------------------
         composable("settings") {
             SettingsScreen(
                 navController = navController,
