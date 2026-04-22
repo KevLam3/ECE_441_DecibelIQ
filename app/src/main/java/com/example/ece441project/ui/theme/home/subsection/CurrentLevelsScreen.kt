@@ -94,9 +94,6 @@ fun CurrentLevelsScreen(
         Spacer(Modifier.height(20.dp))
 
         // --- Data Cards ---
-        DataCard("Current SPL", "$spl dB", Icons.Default.GraphicEq)
-        Spacer(Modifier.height(12.dp))
-
         DataCard("LAeq", "$laeq dB", Icons.Default.Equalizer)
         Spacer(Modifier.height(12.dp))
 
