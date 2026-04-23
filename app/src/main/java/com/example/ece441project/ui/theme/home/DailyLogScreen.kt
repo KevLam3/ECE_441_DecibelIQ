@@ -4,8 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,7 +27,10 @@ fun DailyLogScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Daily Log", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            "Daily Log",
+            style = MaterialTheme.typography.headlineSmall
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -64,7 +65,11 @@ fun SectionItem(title: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun DataCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun DataCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
@@ -72,7 +77,7 @@ fun DataCard(title: String, value: String, icon: androidx.compose.ui.graphics.ve
         ListItem(
             headlineContent = { Text(title) },
             supportingContent = { Text(value) },
-            leadingContent = { Icon(icon, null) }
+            leadingContent = { Icon(icon, contentDescription = null) }
         )
     }
 }

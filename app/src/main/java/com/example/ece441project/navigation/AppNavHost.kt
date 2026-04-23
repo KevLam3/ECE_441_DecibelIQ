@@ -56,7 +56,7 @@ fun AppNavHost(
             }
         }
 
-        // HOME (3‑TAB SCAFFOLD)
+        // HOME (BOTTOM NAV SCAFFOLD: Info | Daily Log | Settings)
         composable("home") {
             HomeScaffold(
                 bleViewModel = bleViewModel,
@@ -64,11 +64,12 @@ fun AppNavHost(
             )
         }
 
-        // SETTINGS SCREEN
+        // SETTINGS (FLATTENED — NO SUBSECTIONS)
         composable("settings") {
             SettingsScreen(
                 navController = navController,
-                bleViewModel = bleViewModel
+                bleViewModel = bleViewModel,
+                themeViewModel = themeViewModel
             )
         }
     }

@@ -3,9 +3,13 @@ package com.example.ece441project.ui.theme.home
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -36,6 +40,20 @@ fun HomeScaffold(
     Scaffold(
         bottomBar = {
             NavigationBar {
+                // INFO TAB (replaces "For You" and appears first)
+                NavigationBarItem(
+                    selected = homeNavController.currentDestination?.route == "info",
+                    onClick = {
+                        homeNavController.navigate("info") {
+                            popUpTo(homeNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                    label = { Text("Info") }
+                )
+
+                // DAILY LOG TAB (second)
                 NavigationBarItem(
                     selected = homeNavController.currentDestination?.route == "daily_log",
                     onClick = {
@@ -44,22 +62,11 @@ fun HomeScaffold(
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.Home, null) },
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Daily Log") }
                 )
 
-                NavigationBarItem(
-                    selected = homeNavController.currentDestination?.route == "for_you",
-                    onClick = {
-                        homeNavController.navigate("for_you") {
-                            popUpTo(homeNavController.graph.findStartDestination().id)
-                            launchSingleTop = true
-                        }
-                    },
-                    icon = { Icon(Icons.Default.Favorite, null) },
-                    label = { Text("For You") }
-                )
-
+                // SETTINGS TAB (third)
                 NavigationBarItem(
                     selected = homeNavController.currentDestination?.route == "settings",
                     onClick = {
@@ -68,7 +75,7 @@ fun HomeScaffold(
                             launchSingleTop = true
                         }
                     },
-                    icon = { Icon(Icons.Default.Settings, null) },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     label = { Text("Settings") }
                 )
             }
@@ -108,9 +115,9 @@ fun HomeScaffold(
                 )
             }
 
-            // FOR YOU
-            composable("for_you") {
-                ForYouScreen(
+            // INFO (replaces FOR YOU)
+            composable("info") {
+                InfoScreen(
                     navController = homeNavController,
                     safe = safe,
                     spl = spl,
@@ -120,27 +127,20 @@ fun HomeScaffold(
                 )
             }
 
-            // SETTINGS
+            // SETTINGS (flattened; Customization merged here)
             composable("settings") {
                 SettingsScreen(
                     navController = homeNavController,
-                    bleViewModel = bleViewModel
+                    bleViewModel = bleViewModel,
+                    themeViewModel = themeViewModel
                 )
             }
-
-            // SETTINGS SUBSECTIONS
-            composable("customization") {
-                CustomizationScreen(themeViewModel = themeViewModel)
-            }
-            composable("account_management") { AccountManagementScreen() }
-            composable("color_indication") { ColorIndicationScreen() }
-            composable("restart_device") { RestartDeviceScreen(bleViewModel = bleViewModel) }
 
             // DAILY LOG SUBROUTES
             composable("shift_started") { ScreenTemplate("Shift Started") }
             composable("shift_ended") { ScreenTemplate("Shift Ended") }
 
-            // FOR YOU SUBROUTES
+            // INFO SUBROUTES (formerly FOR YOU subroutes)
             composable("safe_hours") { ScreenTemplate("Safe Hours Left") }
             composable("battery_life") { ScreenTemplate("Battery Life") }
             composable("power_device") { ScreenTemplate("Power Device") }

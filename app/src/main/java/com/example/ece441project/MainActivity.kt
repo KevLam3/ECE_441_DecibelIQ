@@ -34,12 +34,13 @@ class MainActivity : ComponentActivity() {
             val bleViewModel: BleViewModel = viewModel()
             val themeViewModel: ThemeViewModel = viewModel()
 
+            // Navigation controller
             val navController = rememberNavController()
 
-            // Observe dark mode state BEFORE showing any screen
+            // Observe dark mode state BEFORE showing UI
             val isDarkMode = themeViewModel.isDarkMode.collectAsState()
 
-            // Apply theme globally (Sign-In, Register, Home, everything)
+            // Apply global theme (Sign-In, Register, Home, Settings)
             ECE441ProjectTheme(
                 darkTheme = isDarkMode.value,
                 themeViewModel = themeViewModel
