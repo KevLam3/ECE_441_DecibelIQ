@@ -1,6 +1,5 @@
 package com.example.ece441project.ui.theme.home
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -26,10 +25,20 @@ fun InfoScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        SectionItem("Safe hours left") { navController.navigate("safe_hours") }
-        SectionItem("Battery life") { navController.navigate("battery_life") }
-        SectionItem("Power on/off device") { navController.navigate("power_device") }
+        SectionItem("Why Noise Monitoring Matters") {
+            navController.navigate("info_why_noise")
+        }
 
-        Spacer(Modifier.height(24.dp))
+        SectionItem("Sound Definitions / Information") {
+            navController.navigate("info_sound_definitions")
+        }
+
+        SectionItem("Examples of Noise Levels") {
+            navController.navigate("info_noise_levels")
+        }
+
+        SectionItem("Indicator Information") {
+            navController.navigate("info_indicator_info")
+        }
     }
 }

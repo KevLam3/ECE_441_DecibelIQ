@@ -140,10 +140,11 @@ fun HomeScaffold(
             composable("shift_started") { ScreenTemplate("Shift Started") }
             composable("shift_ended") { ScreenTemplate("Shift Ended") }
 
-            // INFO SUBROUTES (formerly FOR YOU subroutes)
-            composable("safe_hours") { ScreenTemplate("Safe Hours Left") }
-            composable("battery_life") { ScreenTemplate("Battery Life") }
-            composable("power_device") { ScreenTemplate("Power Device") }
+            // INFO SUBROUTES
+            composable("info_why_noise") { InfoWhyNoiseScreen() }
+            composable("info_sound_definitions") { InfoSoundDefinitionsScreen() }
+            composable("info_noise_levels") { InfoNoiseLevelsScreen() }
+            composable("info_indicator_info") { InfoIndicatorInfoScreen() }
         }
     }
 }
