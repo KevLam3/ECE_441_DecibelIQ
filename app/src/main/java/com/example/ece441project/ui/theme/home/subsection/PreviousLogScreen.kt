@@ -11,68 +11,71 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.database.*
 
-data class ShiftLog(
-    val id: String = "",
-    val date: String = "",
-    val start: String = "",
-    val end: String = "",
-    val duration: String = "",
-    val maxDose: String = ""
-)
-
 @Composable
-fun PreviousLogScreen(
-    navController: NavController
-) {
-    var logs by remember { mutableStateOf(listOf<ShiftLog>()) }
+fun PreviousLogScreen(navController: NavController) {
+
+    var logs by remember { mutableStateOf<List<ShiftLog>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         val ref = FirebaseDatabase.getInstance().getReference("shift_logs")
-        ref.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val list = mutableListOf<ShiftLog>()
-                for (child in snapshot.children) {
-                    val log = child.getValue(ShiftLog::class.java)
-                    if (log != null) {
-                        list.add(log.copy(id = child.key ?: ""))
-                    }
-                }
-                logs = list.sortedByDescending { it.id }
-            }
+        ref.get().addOnSuccessListener { snap ->
+            val list = mutableListOf<ShiftLog>()
+            snap.children.forEach { child ->
+                val id = child.key ?: return@forEach
+                val date = child.child("date").getValue(String::class.java) ?: "—"
+                val start = child.child("start").getValue(String::class.java) ?: "—"
+                val end = child.child("end").getValue(String::class.java) ?: "—"
+                val duration = child.child("duration").getValue(String::class.java) ?: "—"
+                val maxSpl = child.child("maxSpl").getValue(String::class.java)?.toFloatOrNull() ?: 0f
 
-            override fun onCancelled(error: DatabaseError) {}
-        })
+                // Get last dose from doseHistory
+                val doseHistory = child.child("doseHistory")
+                val lastDose = doseHistory.children.lastOrNull()?.getValue(Float::class.java) ?: 0f
+
+                list.add(
+                    ShiftLog(
+                        id = id,
+                        date = date,
+                        start = start,
+                        end = end,
+                        duration = duration,
+                        maxSpl = maxSpl,
+                        lastDose = lastDose
+                    )
+                )
+            }
+            logs = list.sortedByDescending { it.id }
+        }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Text("Previous Logs", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(16.dp))
-
-        LazyColumn {
-            items(logs) { log ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clickable {
-                            navController.navigate("shift_detail/${log.id}")
-                        },
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Date: ${log.date}", style = MaterialTheme.typography.bodyLarge)
-                        Text("Start: ${log.start}", style = MaterialTheme.typography.bodyLarge)
-                        Text("End: ${log.end}", style = MaterialTheme.typography.bodyLarge)
-                        Text("Duration: ${log.duration}", style = MaterialTheme.typography.bodyLarge)
-                        Text("Max Dose: ${log.maxDose}%", style = MaterialTheme.typography.bodyLarge)
-                    }
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        items(logs) { log ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable { navController.navigate("shift_detail/${log.id}") },
+                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Date: ${log.date}")
+                    Text("Start: ${log.start}")
+                    Text("End: ${log.end}")
+                    Text("Duration: ${log.duration}")
+                    Text("Current Dose: ${"%.2f".format(log.lastDose)} %")
+                    Text("Max SPL: ${"%.2f".format(log.maxSpl)} dBA")
                 }
             }
         }
     }
 }
+
+data class ShiftLog(
+    val id: String,
+    val date: String,
+    val start: String,
+    val end: String,
+    val duration: String,
+    val maxSpl: Float,
+    val lastDose: Float
+)

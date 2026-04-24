@@ -22,7 +22,8 @@ fun ShiftDetailScreen(
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
-    var maxDose by remember { mutableStateOf("") }
+    var maxSpl by remember { mutableStateOf(0f) }
+    var currentDose by remember { mutableStateOf(0f) }
 
     LaunchedEffect(logId) {
         val ref = FirebaseDatabase.getInstance()
@@ -34,8 +35,11 @@ fun ShiftDetailScreen(
             start = snap.child("start").value?.toString() ?: ""
             end = snap.child("end").value?.toString() ?: ""
             duration = snap.child("duration").value?.toString() ?: ""
-            maxDose = snap.child("maxDose").value?.toString() ?: ""
 
+            // Load max SPL
+            maxSpl = snap.child("maxSpl").value?.toString()?.toFloatOrNull() ?: 0f
+
+            // Load dose history
             val list = mutableListOf<Pair<Long, Float>>()
             val hist = snap.child("doseHistory")
             for (child in hist.children) {
@@ -43,7 +47,11 @@ fun ShiftDetailScreen(
                 val v = child.getValue(Float::class.java) ?: continue
                 list.add(ts to v)
             }
+
             doseHistory = list.sortedBy { it.first }
+
+            // Current dose = last entry
+            currentDose = doseHistory.lastOrNull()?.second ?: 0f
         }
     }
 
@@ -60,7 +68,11 @@ fun ShiftDetailScreen(
         Text("Start: $start")
         Text("End: $end")
         Text("Duration: $duration")
-        Text("Max Dose: $maxDose%")
+
+        Spacer(Modifier.height(12.dp))
+
+        Text("Current Dose: ${"%.2f".format(currentDose)} %")
+        Text("Max SPL: ${"%.2f".format(maxSpl)} dBA")
 
         Spacer(Modifier.height(24.dp))
 
@@ -87,7 +99,6 @@ fun DoseGraphWithTime(points: List<Pair<Long, Float>>) {
     val maxTs = points.last().first
     val totalMs = (maxTs - minTs).coerceAtLeast(1)
     val totalSec = totalMs / 1000f
-    val totalMin = totalSec / 60f
 
     val maxVal = points.maxOf { it.second }.coerceAtLeast(1f)
 
@@ -106,12 +117,10 @@ fun DoseGraphWithTime(points: List<Pair<Long, Float>>) {
                     detectTapGestures { offset ->
                         touchX = offset.x
 
-                        // Convert touchX → timestamp
                         val width = size.width
                         val ratio = (touchX!! / width).coerceIn(0f, 1f)
                         val ts = (minTs + ratio * totalMs).toLong()
 
-                        // Find nearest point
                         selectedPoint = points.minByOrNull { abs(it.first - ts) }
                     }
                 }
@@ -119,7 +128,6 @@ fun DoseGraphWithTime(points: List<Pair<Long, Float>>) {
             val width = size.width
             val height = size.height
 
-            // Draw line graph
             var prevX = 0f
             var prevY = height - (points.first().second / maxVal) * height
 
@@ -140,7 +148,7 @@ fun DoseGraphWithTime(points: List<Pair<Long, Float>>) {
                 prevY = y
             }
 
-            // Draw touch cursor
+            // Touch cursor
             touchX?.let { x ->
                 drawLine(
                     color = Color.Red,
@@ -153,7 +161,7 @@ fun DoseGraphWithTime(points: List<Pair<Long, Float>>) {
 
         Spacer(Modifier.height(8.dp))
 
-        // TIME MARKERS (0 min → mid → end)
+        // TIME MARKERS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween

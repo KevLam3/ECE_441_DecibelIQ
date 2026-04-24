@@ -19,9 +19,12 @@ fun ShiftTimeScreen(
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
     val idFormat = remember { SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()) }
 
+    // Live SPL from BLE
+    val currentSpl = bleViewModel.spl.collectAsState().value
+
     var shiftStart by remember { mutableStateOf<String?>(null) }
     var shiftEnd by remember { mutableStateOf<String?>(null) }
-    var maxDose by remember { mutableStateOf(0f) }
+    var maxSpl by remember { mutableStateOf(0f) }
     var shiftId by remember { mutableStateOf<String?>(null) }
 
     // Restore active shift if present
@@ -38,10 +41,10 @@ fun ShiftTimeScreen(
         }
     }
 
-    // Track max dose while shift is active
-    LaunchedEffect(currentDose, shiftStart) {
-        if (shiftStart != null && currentDose > maxDose) {
-            maxDose = currentDose
+    // Track max SPL while shift is active
+    LaunchedEffect(currentSpl, shiftStart) {
+        if (shiftStart != null && currentSpl > maxSpl) {
+            maxSpl = currentSpl
         }
     }
 
@@ -53,7 +56,7 @@ fun ShiftTimeScreen(
 
         shiftStart = startStr
         shiftEnd = null
-        maxDose = 0f
+        maxSpl = 0f
         shiftId = id
 
         val data = mapOf(
@@ -91,7 +94,7 @@ fun ShiftTimeScreen(
         val updates = mapOf(
             "end" to endStr,
             "duration" to duration,
-            "maxDose" to maxDose.toString()
+            "maxSpl" to maxSpl.toString()
         )
         logRef.updateChildren(updates)
 
@@ -142,8 +145,13 @@ fun ShiftTimeScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                Text("Highest Dose:", style = MaterialTheme.typography.titleMedium)
-                Text("${maxDose} %")
+                Text("Current Dose:", style = MaterialTheme.typography.titleMedium)
+                Text("${"%.2f".format(currentDose)} %")
+
+                Spacer(Modifier.height(12.dp))
+
+                Text("Max SPL:", style = MaterialTheme.typography.titleMedium)
+                Text("${"%.2f".format(maxSpl)} dBA")
             }
         }
     }
