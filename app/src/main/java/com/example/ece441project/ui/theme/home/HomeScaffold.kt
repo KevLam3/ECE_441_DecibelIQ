@@ -170,7 +170,7 @@ fun HomeScaffold(
                 ShiftDetailScreen(logId = logId)
             }
 
-            // INFO (FIXED: now passes all required parameters)
+            // INFO MAIN SCREEN
             composable("info") {
                 InfoScreen(
                     navController = homeNavController,
@@ -180,6 +180,23 @@ fun HomeScaffold(
                     led = led,
                     blink = blink
                 )
+            }
+
+            // INFO SUBSECTIONS — ALL TAKE ZERO PARAMETERS
+            composable("info_why_noise") {
+                InfoWhyNoiseScreen()
+            }
+
+            composable("info_sound_definitions") {
+                InfoSoundDefinitionsScreen()
+            }
+
+            composable("info_noise_levels") {
+                InfoNoiseLevelsScreen()
+            }
+
+            composable("info_indicator_info") {
+                InfoIndicatorInfoScreen()
             }
 
             // SETTINGS
