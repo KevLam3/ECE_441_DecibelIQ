@@ -1,5 +1,6 @@
 package com.example.ece441project.ui.theme.home
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import com.example.ece441project.BleViewModel
 import com.example.ece441project.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
 
+@SuppressLint("MissingPermission")
 @Composable
 fun SettingsScreen(
     navController: NavController,
@@ -98,16 +100,6 @@ fun SettingsScreen(
                         .clickable { themeViewModel.updateButtonColor(c) }
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = { /* purely a preview using current color */ },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = buttonColor)
-        ) {
-            Text("Preview Button Color")
         }
 
         Spacer(modifier = Modifier.height(32.dp))

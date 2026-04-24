@@ -34,9 +34,14 @@ fun DailyLogScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        SectionItem("Shift started") { navController.navigate("shift_started") }
-        SectionItem("Shift ended") { navController.navigate("shift_ended") }
-        SectionItem("Current sound levels") { navController.navigate("current_levels") }
+        // MERGED SHIFT TIME
+        SectionItem("Shift Time") { navController.navigate("shift_time") }
+
+        // CURRENT LEVELS
+        SectionItem("Current Sound Levels") { navController.navigate("current_levels") }
+
+        // NEW: PREVIOUS LOG
+        SectionItem("Previous Log") { navController.navigate("previous_log") }
 
         Spacer(Modifier.height(24.dp))
     }
@@ -61,23 +66,5 @@ fun SectionItem(title: String, onClick: () -> Unit) {
             Spacer(Modifier.weight(1f))
             Icon(Icons.Default.ArrowForward, contentDescription = null)
         }
-    }
-}
-
-@Composable
-fun DataCard(
-    title: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        ListItem(
-            headlineContent = { Text(title) },
-            supportingContent = { Text(value) },
-            leadingContent = { Icon(icon, contentDescription = null) }
-        )
     }
 }

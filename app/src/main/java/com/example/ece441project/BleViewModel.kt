@@ -11,14 +11,13 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.os.ParcelUuid
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.AndroidViewModel
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
-import com.google.firebase.database.FirebaseDatabase
 
 class BleViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,8 +33,8 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private val context: Context = application.applicationContext
-    private val firebaseRef = FirebaseDatabase.getInstance()
-        .getReference("mic")
+    private val firebaseRef = FirebaseDatabase.getInstance().getReference("mic")
+    private val shiftLogsRef = FirebaseDatabase.getInstance().getReference("shift_logs")
 
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -67,7 +66,24 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     private val _safe = MutableStateFlow(0f)
     val safe: StateFlow<Float> = _safe
 
+    private val _batteryPercent = MutableStateFlow(0)
+    val batteryPercent: StateFlow<Int> = _batteryPercent
+
+    // Active shift logging
+    private val _activeShiftId = MutableStateFlow<String?>(null)
+    val activeShiftId: StateFlow<String?> = _activeShiftId
+
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // ---------- Public API for shift logging ----------
+
+    fun startShiftLogging(shiftId: String) {
+        _activeShiftId.value = shiftId
+    }
+
+    fun stopShiftLogging() {
+        _activeShiftId.value = null
+    }
 
     // ---------- SCAN ----------
 
@@ -78,21 +94,17 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        Log.d(TAG, "Starting BLE scan")
-
         scanner = bluetoothAdapter.bluetoothLeScanner
 
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        // No filter: discover all, then match by name or service later if needed
         scanner?.startScan(null, settings, scanCallback)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
     fun stopScan() {
-        Log.d(TAG, "Stopping BLE scan")
         scanner?.stopScan(scanCallback)
     }
 
@@ -101,18 +113,11 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
             val name = device.name ?: "Unknown"
-            Log.d(TAG, "Found device: $name - ${device.address}")
 
-            // Match your ESP32 by name
             if (name == "ESP32-MIC") {
-                Log.d(TAG, "Target ESP32-MIC found, stopping scan and connecting")
                 stopScan()
                 connectToDevice(device)
             }
-        }
-
-        override fun onScanFailed(errorCode: Int) {
-            Log.e(TAG, "Scan failed with error: $errorCode")
         }
     }
 
@@ -120,20 +125,15 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun connectToDevice(device: BluetoothDevice) {
-        Log.d(TAG, "Connecting to device: ${device.address}")
-
-        // Close any previous GATT to avoid ghost connections
         gatt?.close()
         gatt = null
 
         targetDevice = device
-
         gatt = device.connectGatt(context, false, gattCallback)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun disconnect() {
-        Log.d(TAG, "Disconnect requested")
         gatt?.disconnect()
         gatt?.close()
         gatt = null
@@ -143,10 +143,8 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
 
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            Log.d(TAG, "onConnectionStateChange: status=$status, newState=$newState")
 
             if (status != BluetoothGatt.GATT_SUCCESS) {
-                Log.e(TAG, "GATT error, closing and retrying if possible")
                 gatt.close()
                 this@BleViewModel.gatt = null
                 retryConnection()
@@ -155,22 +153,18 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
 
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
-                    Log.d(TAG, "Connected to GATT server, requesting MTU")
-
                     this@BleViewModel.gatt = gatt
 
                     mainHandler.postDelayed({
                         try {
                             gatt.requestMtu(MTU_REQUEST)
-                        } catch (e: SecurityException) {
-                            Log.e(TAG, "Missing BLUETOOTH_CONNECT permission for requestMtu", e)
+                        } catch (_: SecurityException) {
                             gatt.discoverServices()
                         }
                     }, MTU_DELAY_MS)
                 }
 
                 BluetoothProfile.STATE_DISCONNECTED -> {
-                    Log.d(TAG, "Disconnected from GATT server")
                     gatt.close()
                     this@BleViewModel.gatt = null
                     retryConnection()
@@ -180,38 +174,24 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
 
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-            Log.d(TAG, "MTU changed to $mtu, status=$status")
             gatt.discoverServices()
         }
 
         @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            Log.d(TAG, "Services discovered, status=$status")
             if (status != BluetoothGatt.GATT_SUCCESS) return
 
-            val service = gatt.getService(SERVICE_UUID)
-            if (service == null) {
-                Log.e(TAG, "Service $SERVICE_UUID not found")
-                return
-            }
+            val service = gatt.getService(SERVICE_UUID) ?: return
+            val characteristic = service.getCharacteristic(CHARACTERISTIC_UUID) ?: return
 
-            val characteristic = service.getCharacteristic(CHARACTERISTIC_UUID)
-            if (characteristic == null) {
-                Log.e(TAG, "Characteristic $CHARACTERISTIC_UUID not found")
-                return
-            }
-
-            // Enable notifications
             gatt.setCharacteristicNotification(characteristic, true)
 
             val descriptor = characteristic.getDescriptor(
                 UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
             )
-            if (descriptor != null) {
-                descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                gatt.writeDescriptor(descriptor)
-            } else {
-                Log.w(TAG, "CCCD descriptor not found, notifications may not work")
+            descriptor?.let {
+                it.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                gatt.writeDescriptor(it)
             }
         }
 
@@ -222,7 +202,6 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         ) {
             if (characteristic.uuid == CHARACTERISTIC_UUID) {
                 val data = characteristic.getStringValue(0)
-                Log.d(TAG, "Received: $data")
                 parsePacket(data)
             }
         }
@@ -233,39 +212,17 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun retryConnection() {
         val device = targetDevice ?: return
-        Log.d(TAG, "Retrying connection in ${RECONNECT_DELAY_MS}ms")
 
         mainHandler.postDelayed({
             if (bluetoothAdapter?.isEnabled == true) {
                 connectToDevice(device)
-            } else {
-                Log.w(TAG, "Bluetooth disabled, cannot retry connection")
             }
         }, RECONNECT_DELAY_MS)
     }
 
-    // ---------- Upload to Firebase ---------
-    @SuppressLint("DefaultLocale")
-    private fun uploadToFirebase() {
-        val data = mapOf(
-            "spl" to String.format("%.2f", spl.value),
-            "laeq" to String.format("%.2f", laeq.value),
-            "dose" to String.format("%.2f", dose.value),
-            "led" to led.value,
-            "blink" to blink.value,
-            "time24" to String.format("%.2f", time24.value),
-            "safe" to String.format("%.2f", safe.value)
-        )
-
-        firebaseRef.setValue(data)
-    }
-
-    // ---------- PARSING ESP32 PACKET ----------
+    // ---------- PARSE PACKET ----------
 
     private fun parsePacket(packet: String) {
-        // Expected format:
-        // spl=53.47,laeq=83.07,dose=0.85,led=ORANGE,blink=0,time24=23.89,safe=12.38
-
         val parts = packet.split(",")
         val map = mutableMapOf<String, String>()
 
@@ -283,23 +240,49 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         map["blink"]?.toIntOrNull()?.let { _blink.value = it != 0 }
         map["time24"]?.toFloatOrNull()?.let { _time24.value = it }
         map["safe"]?.toFloatOrNull()?.let { _safe.value = it }
+        map["batt"]?.toIntOrNull()?.let { _batteryPercent.value = it }
+
+        // Log dose history for active shift (timestamped)
+        val shiftId = _activeShiftId.value
+        if (shiftId != null) {
+            val ts = System.currentTimeMillis().toString()
+            shiftLogsRef
+                .child(shiftId)
+                .child("doseHistory")
+                .child(ts)
+                .setValue(_dose.value)
+        }
 
         uploadToFirebase()
+    }
+
+    // ---------- FIREBASE UPLOAD (live mic snapshot) ----------
+
+    @SuppressLint("DefaultLocale")
+    private fun uploadToFirebase() {
+        val data = mapOf(
+            "spl" to String.format("%.2f", spl.value),
+            "laeq" to String.format("%.2f", laeq.value),
+            "dose" to String.format("%.2f", dose.value),
+            "led" to led.value,
+            "blink" to blink.value,
+            "time24" to String.format("%.2f", time24.value),
+            "safe" to String.format("%.2f", safe.value),
+            "batt" to batteryPercent.value.toString()
+        )
+
+        firebaseRef.setValue(data)
     }
 
     // ---------- CLEANUP ----------
 
     override fun onCleared() {
         super.onCleared()
-        try {
-            stopScan()
-        } catch (_: SecurityException) {
-        }
+        try { stopScan() } catch (_: SecurityException) {}
         try {
             gatt?.disconnect()
             gatt?.close()
-        } catch (_: SecurityException) {
-        }
+        } catch (_: SecurityException) {}
         gatt = null
     }
 }
